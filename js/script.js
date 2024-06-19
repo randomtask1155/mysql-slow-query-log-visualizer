@@ -43,38 +43,50 @@ function processLog (logtext)
     var date_string;
     var entry_stats;
     
-    logdata = logtext.split("# User@Host: ");
+    //logdata = logtext.split("# User@Host: ");
+    logdata = logtext.split("# Time: ");
     logdata.shift();
 
     for (var i = 0; i < logdata.length; i++) {
+
+        // 0 # Time: 2024-06-04T21:00:13.552215Z
+        // 1 # User@Host: user[pass] @  [10.0.0.1]  Id: 78417468
+        // 2 # Schema: ccdb  Last_errno: 0  Killed: 0
+        // 3 # Query_time: 10.415087  Lock_time: 0.000845  Rows_sent: 3  Rows_examined: 329626  Rows_affected: 0  Bytes_sent: 6454
+        // 4 SET timestamp=1717534813;
+        // 5 SELECT 
+
+        // 0 # Time: 2024-06-04T21:01:18.105252Z
+        // 1 # User@Host: user[pass] @  [10.0.0.1]  Id: 73322256
+        // 2 # Schema: diego  Last_errno: 0  Killed: 0
+        // 3 # Query_time: 12.462617  Lock_time: 0.000316  Rows_sent: 19143  Rows_examined: 38286  Rows_affected: 0  Bytes_sent: 679603003
+        // 4 use diego;
+        // 5 SET timestamp=1717534878;
+        // 6 SELECT
         
         // load string
-        
         log_entry = logdata[i];
         logdata[i] = {};
         
         log_lines = log_entry.split("\n");
        
         // get host
-        
-        logdata[i].db_name = log_lines[0].split("[")[1].split("]")[0];
+        logdata[i].db_name = log_lines[2].split(" ")[3];
        
         // get stats
-        
-        entry_stats = log_lines[1].split(" ");
+        entry_stats = log_lines[3].split(" ");
         logdata[i].query_time = entry_stats[2]; // query time
-        logdata[i].lock_time = entry_stats[5]; // lock time
-        logdata[i].rows_sent = entry_stats[7]; // rows sent
-        logdata[i].rows_examined = entry_stats[10]; // row examined
+        logdata[i].lock_time = entry_stats[4]; // lock time
+        logdata[i].rows_sent = entry_stats[6]; // rows sent
+        logdata[i].rows_examined = entry_stats[8]; // row examined
         
-        if (log_lines[2].substr(0,3) == "use") {
+        if (log_lines[4].substr(0,3) == "use") {
             log_lines.shift(); 
         }
         
-        date_string = log_lines[2].split("SET timestamp=")[1].split(";")[0];
+        date_string = log_lines[4].split("SET timestamp=")[1].split(";")[0];
         
         // parse date
-        
         d = new Date(date_string * 1000);
         
         var year = d.getFullYear();
@@ -82,15 +94,15 @@ function processLog (logtext)
         var month = (d.getUTCMonth() + 1) + "";
         if (month.length == 1) month = "0" + month;
         
-        var day = d.getDate().toString();
+        var day = d.getUTCDate().toString();
         if (day.length == 1) day = "0" + day;
         
-        var dayOfWeek = d.getDay();
+        var dayOfWeek = d.getUTCDay();
         
-        var hours = d.getHours().toString();
+        var hours = d.getUTCHours().toString();
         if (hours.length == 1) hours = "0" + hours;
         
-        var mins = d.getMinutes().toString();
+        var mins = d.getUTCMinutes().toString();
         if (mins.length == 1) mins = "0" + mins;
         
         date_string = year + "/" + month + "/" + day + " " + hours + ":" + mins;
@@ -101,6 +113,8 @@ function processLog (logtext)
         
         // isolate query
         
+        log_lines.shift();
+        log_lines.shift();
         log_lines.shift();
         log_lines.shift();
         log_lines.shift();
