@@ -49,7 +49,7 @@ function processLog (logtext)
 
     for (var i = 0; i < logdata.length; i++) {
 
-        // 0 # Time: 2024-06-04T21:00:13.552215Z
+        /* 0 # Time: 2024-06-04T21:00:13.552215Z
         // 1 # User@Host: user[pass] @  [10.0.0.1]  Id: 78417468
         // 2 # Schema: ccdb  Last_errno: 0  Killed: 0
         // 3 # Query_time: 10.415087  Lock_time: 0.000845  Rows_sent: 3  Rows_examined: 329626  Rows_affected: 0  Bytes_sent: 6454
@@ -63,6 +63,32 @@ function processLog (logtext)
         // 4 use diego;
         // 5 SET timestamp=1717534878;
         // 6 SELECT
+ 
+        0 # Time: 2024-06-11T10:16:33.035025Z
+        1 # User@Host: user[pass] @  [10.0.0.1]  Id:  Id: 3243312
+        2 # Schema: diego  Last_errno: 0  Killed: 0"
+        3 # Query_time: 16.503651  Lock_time: 0.000000  Rows_sent: 0  Rows_examined: 0  Rows_affected: 0  Bytes_sent: 52
+        4 # Tmp_tables: 0  Tmp_disk_tables: 0  Tmp_table_sizes: 0
+        5 # InnoDB_trx_id: 9C5C92E9B
+        6 # Full_scan: No  Full_join: No  Tmp_table: No  Tmp_table_on_disk: No
+        7 # Filesort: No  Filesort_on_disk: No  Merge_passes: 0
+        8 #   InnoDB_IO_r_ops: 0  InnoDB_IO_r_bytes: 0  InnoDB_IO_r_wait: 0.000000
+        9 #   InnoDB_rec_lock_wait: 0.000000  InnoDB_queue_wait: 0.000000
+        10 #   InnoDB_pages_distinct: 3"
+        11 SET timestamp=1718100976;"
+        12 SELECT
+
+        0 # Time: 2024-06-11T10:16:34.309646Z
+        1 # User@Host: user[pass] @  [10.0.0.1]  Id:  Id: 3243277
+        2 # Schema: diego  Last_errno: 0  Killed: 0
+        3 # Query_time: 18.144152  Lock_time: 0.000000  Rows_sent: 0  Rows_examined: 0  Rows_affected: 0  Bytes_sent: 11
+        4 # Tmp_tables: 0  Tmp_disk_tables: 0  Tmp_table_sizes: 0
+        5 # Full_scan: No  Full_join: No  Tmp_table: No  Tmp_table_on_disk: No
+        6 # Filesort: No  Filesort_on_disk: No  Merge_passes: 0
+        7 # No InnoDB statistics available for this query     
+        8 use diego;
+        */
+
         
         // load string
         log_entry = logdata[i];
@@ -79,11 +105,31 @@ function processLog (logtext)
         logdata[i].lock_time = entry_stats[4]; // lock time
         logdata[i].rows_sent = entry_stats[6]; // rows sent
         logdata[i].rows_examined = entry_stats[8]; // row examined
-        
+
+        if (log_lines[4].substr(0,12) == "# Tmp_tables") {
+            log_lines.shift();  // # Tmp_tables: 0  Tmp_disk_tables: 0  Tmp_table_sizes: 0
+                                // # InnoDB_trx_id: 9C5C92E9B ### only if statitics are there
+            log_lines.shift();  // # Full_scan: No  Full_join: No  Tmp_table: No  Tmp_table_on_disk: No
+            log_lines.shift();  // # Filesort: No  Filesort_on_disk: No  Merge_passes: 0 
+
+            if (log_lines[4] == "# No InnoDB statistics available for this query" ) {
+                log_lines.shift(); // # No InnoDB statistics available for this query
+            } else {
+                log_lines.shift(); // # Filesort: No  Filesort_on_disk: No  Merge_passes: 0
+                log_lines.shift(); // #   InnoDB_IO_r_ops: 0  InnoDB_IO_r_bytes: 0  InnoDB_IO_r_wait: 0.000000
+                log_lines.shift(); // #   InnoDB_rec_lock_wait: 0.000000  InnoDB_queue_wait: 0.000000
+                log_lines.shift(); // #   InnoDB_pages_distinct: 3"
+                
+            }            
+        }
+
         if (log_lines[4].substr(0,3) == "use") {
             log_lines.shift(); 
         }
+
         
+        //console.log(log_entry);
+        //console.log(log_lines[4]);
         date_string = log_lines[4].split("SET timestamp=")[1].split(";")[0];
         
         // parse date
